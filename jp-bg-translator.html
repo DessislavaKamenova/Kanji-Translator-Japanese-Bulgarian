@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>書 — Японско-български преводач</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;800&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#e7e0d0;
+    --paper-2:#ded5c1;
+    --ink:#221f1b;
+    --ink-soft:#4a443c;
+    --hanko:#a23829;
+    --jade:#4f6b57;
+    --muted:#8a8072;
+    --line:#c9bfa9;
+    --white-ink:#faf7ee;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 800px at 15% -10%, #efe9db 0%, transparent 60%),
+      var(--paper);
+    background-blend-mode:normal;
+    color:var(--ink);
+    font-family:"PT Serif", serif;
+    min-height:100vh;
+    padding:28px 18px 60px;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    pointer-events:none;
+    opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode:multiply;
+  }
+  .wrap{max-width:760px; margin:0 auto; position:relative;}
+
+  header{margin-bottom:30px;}
+  .kicker{
+    font-family:"Shippori Mincho", serif;
+    font-size:15px;
+    color:var(--hanko);
+    letter-spacing:.02em;
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:"Shippori Mincho", serif;
+    font-weight:600;
+    font-size:clamp(28px,6vw,40px);
+    margin:0 0 10px;
+    line-height:1.15;
+    color:var(--ink);
+  }
+  h1 .jp{font-size:1.15em; margin-right:10px;}
+  p.lede{
+    color:var(--ink-soft);
+    font-size:16px;
+    line-height:1.55;
+    max-width:52ch;
+    margin:0;
+  }
+
+  .switch{
+    display:inline-flex;
+    margin:26px 0 22px;
+    border:1px solid var(--ink);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .switch button{
+    font-family:"PT Serif", serif;
+    font-size:14.5px;
+    padding:9px 16px;
+    background:transparent;
+    border:none;
+    color:var(--ink-soft);
+    cursor:pointer;
+    position:relative;
+  }
+  .switch button + button{border-left:1px solid var(--ink);}
+  .switch button.active{background:var(--ink); color:var(--white-ink);}
+
+  section.panel{display:none;}
+  section.panel.active{display:block;}
+
+  /* --- genkouyoushi writing box --- */
+  .grid-box{
+    width:100%;
+    max-width:300px;
+    aspect-ratio:1/1;
+    position:relative;
+    background:var(--white-ink);
+    border:1.5px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--paper-2), 4px 4px 0 1px var(--ink);
+    touch-action:none;
+    cursor:crosshair;
+  }
+  .grid-box::before,
+  .grid-box::after{
+    content:"";
+    position:absolute;
+    background:var(--line);
+  }
+  .grid-box::before{ /* vertical guide */
+    left:50%; top:0; bottom:0; width:1px; transform:translateX(-.5px);
+  }
+  .grid-box::after{ /* horizontal guide */
+    top:50%; left:0; right:0; height:1px; transform:translateY(-.5px);
+  }
+  .grid-box canvas{
+    position:absolute; inset:0; width:100%; height:100%;
+  }
+  .box-row{display:flex; gap:28px; align-items:flex-end; flex-wrap:wrap;}
+
+  /* --- photo upload zone --- */
+  .photo-zone{
+    width:100%;
+    max-width:300px;
+    aspect-ratio:1/1;
+    position:relative;
+    background:var(--white-ink);
+    border:1.5px dashed var(--ink);
+    box-shadow: 4px 4px 0 var(--paper-2), 4px 4px 0 1px var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    cursor:pointer;
+  }
+  .photo-placeholder{
+    text-align:center;
+    color:var(--muted);
+    padding:20px;
+  }
+  .photo-placeholder svg{margin-bottom:10px;}
+  .photo-placeholder p{font-size:14px; margin:0;}
+  .photo-zone img{
+    display:none;
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:contain;
+    background:var(--white-ink);
+  }
+  .photo-zone.has-image .photo-placeholder{display:none;}
+  .photo-zone.has-image img{display:block;}
+
+  .candidates{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:18px;
+  }
+  .chip{
+    font-family:"PT Serif", serif;
+    font-size:15px;
+    padding:8px 16px;
+    background:var(--white-ink);
+    border:1px solid var(--ink);
+    border-radius:1px;
+    cursor:pointer;
+    color:var(--ink);
+    display:inline-flex;
+    align-items:baseline;
+    gap:8px;
+  }
+  .chip .cjp{font-family:"Noto Sans JP", sans-serif; font-size:17px;}
+  .chip .creading{font-size:12.5px; color:var(--muted);}
+  .chip:hover{background:var(--ink); color:var(--white-ink);}
+  .chip:hover .creading{color:var(--paper-2);}
+  .chip.selected{background:var(--jade); border-color:var(--jade); color:var(--white-ink);}
+  .chip.selected .creading{color:var(--paper-2);}
+  .box-caption{
+    font-size:13px; color:var(--muted); margin-top:10px; max-width:300px; line-height:1.5;
+  }
+
+  .controls{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+  button.action{
+    font-family:"PT Serif", serif;
+    font-size:15px;
+    padding:11px 22px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--white-ink);
+    cursor:pointer;
+    border-radius:1px;
+    letter-spacing:.01em;
+  }
+  button.action.secondary{
+    background:transparent;
+    color:var(--ink);
+  }
+  button.action:disabled{opacity:.45; cursor:default;}
+  button.action:hover:not(:disabled){filter:brightness(1.08);}
+
+  textarea.bg-input{
+    width:100%;
+    max-width:520px;
+    min-height:110px;
+    font-family:"PT Serif", serif;
+    font-size:18px;
+    padding:16px;
+    background:var(--white-ink);
+    border:1.5px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--paper-2), 4px 4px 0 1px var(--ink);
+    resize:vertical;
+    color:var(--ink);
+  }
+  textarea.bg-input:focus{outline:2px solid var(--jade); outline-offset:2px;}
+
+  .status{
+    margin-top:16px;
+    font-size:14px;
+    color:var(--ink-soft);
+    min-height:20px;
+  }
+  .status.err{color:var(--hanko);}
+
+  .result{
+    margin-top:34px;
+    padding-top:26px;
+    border-top:1px solid var(--line);
+    display:none;
+  }
+  .result.show{display:block;}
+  .headword{
+    display:flex; align-items:baseline; gap:16px; flex-wrap:wrap; margin-bottom:6px;
+  }
+  .headword .kanji{
+    font-family:"Shippori Mincho", serif;
+    font-weight:800;
+    font-size:56px;
+    line-height:1;
+    color:var(--ink);
+  }
+  .headword .stamp{
+    font-family:"Shippori Mincho", serif;
+    font-size:14px;
+    color:var(--hanko);
+    border:1px solid var(--hanko);
+    padding:3px 8px;
+    border-radius:1px;
+  }
+  .reading{
+    font-family:"Noto Sans JP", sans-serif;
+    font-size:17px;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .romaji{font-size:15px; color:var(--muted); font-style:italic; margin-bottom:18px;}
+  .translation{
+    font-size:23px;
+    color:var(--jade);
+    font-weight:700;
+    margin-bottom:22px;
+    line-height:1.4;
+  }
+  .example{
+    background:rgba(79,107,87,0.06);
+    border-left:3px solid var(--jade);
+    padding:14px 18px;
+    margin-top:6px;
+  }
+  .example .jp-line{
+    font-family:"Noto Sans JP", sans-serif;
+    font-size:18px;
+    margin-bottom:6px;
+    color:var(--ink);
+  }
+  .example .reading-line{
+    font-size:14px;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .example .bg-line{
+    font-size:16px;
+    color:var(--ink-soft);
+  }
+  .example-label{
+    font-size:13px;
+    color:var(--muted);
+    margin:22px 0 8px;
+  }
+
+  footer{
+    margin-top:50px;
+    font-size:12.5px;
+    color:var(--muted);
+    border-top:1px solid var(--line);
+    padding-top:16px;
+  }
+
+  @media (max-width:480px){
+    .headword .kanji{font-size:44px;}
+    .translation{font-size:20px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="kicker">手書き辞典・ръкописен речник</p>
+    <h1><span class="jp">書</span>Японско ⇄ Български</h1>
+    <p class="lede">Напишете канджи с пръст или мишка в полето и получете четене, превод и пример за употреба. Или пишете на български за обратен превод.</p>
+  </header>
+
+  <div class="switch" role="tablist">
+    <button class="active" data-panel="jp2bg" type="button">日 → BG написано</button>
+    <button data-panel="photo" type="button">日 → BG снимка</button>
+    <button data-panel="bg2jp" type="button">BG → 日 текст</button>
+  </div>
+
+  <!-- JAPANESE HANDWRITING -> BULGARIAN -->
+  <section class="panel active" id="panel-jp2bg">
+    <div class="box-row">
+      <div>
+        <div class="grid-box" id="gridBox">
+          <canvas id="canvas"></canvas>
+        </div>
+        <p class="box-caption">Пишете бавно, с ясни щрихи. Може да напишете дума от няколко канджи.</p>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="action secondary" id="clearBtn" type="button">Изчисти</button>
+      <button class="action" id="recognizeBtn" type="button">Разпознай и преведи</button>
+    </div>
+    <div class="status" id="status1"></div>
+  </section>
+
+  <!-- PHOTO OF JAPANESE TEXT -> BULGARIAN -->
+  <section class="panel" id="panel-photo">
+    <div class="photo-zone" id="photoZone">
+      <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
+      <div class="photo-placeholder" id="photoPlaceholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="34" height="34"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+        <p>Изберете снимка на японски текст</p>
+      </div>
+      <img id="photoPreview" alt="">
+    </div>
+    <div class="controls">
+      <button class="action secondary" id="chooseBtn" type="button">Избери снимка</button>
+      <button class="action" id="recognizePhotoBtn" type="button" disabled>Открий думите в снимката</button>
+    </div>
+    <p class="box-caption">Направете снимката по-близо и на добра светлина — четливостта на текста определя точността. След анализа ще видите откритите думи, за да изберете точната.</p>
+    <div class="status" id="status3"></div>
+    <div class="candidates" id="photoCandidates"></div>
+  </section>
+
+  <!-- BULGARIAN -> JAPANESE -->
+  <section class="panel" id="panel-bg2jp">
+    <textarea class="bg-input" id="bgInput" placeholder="Напишете дума или кратка фраза на български…"></textarea>
+    <div class="controls">
+      <button class="action" id="translateBgBtn" type="button">Преведи на японски</button>
+    </div>
+    <div class="status" id="status2"></div>
+  </section>
+
+  <div class="result" id="result">
+    <div class="headword">
+      <span class="kanji" id="rKanji">—</span>
+      <span class="stamp" id="rStamp">訳</span>
+    </div>
+    <div class="reading" id="rReading"></div>
+    <div class="romaji" id="rRomaji"></div>
+    <div class="translation" id="rTranslation"></div>
+
+    <div class="example-label">Пример за употреба</div>
+    <div class="example">
+      <div class="jp-line" id="rExJp"></div>
+      <div class="reading-line" id="rExReading"></div>
+      <div class="bg-line" id="rExBg"></div>
+    </div>
+  </div>
+
+  <footer>Разпознаването и преводът се извършват от Claude. Резултатите за ръкописен текст може да варират според четливостта на почерка.</footer>
+</div>
+
+<script>
+(function(){
+  // Shared helpers/state — pure definitions, safe even if something else fails.
+  let canvas, ctx, gridBox, drawing = false, hasInk = false;
+
+  function showResult(data){
+    const set = (id, val)=>{ const el = document.getElementById(id); if(el) el.textContent = val; };
+    set('rKanji', data.headword || '?');
+    set('rReading', data.reading || '');
+    set('rRomaji', data.romaji ? '('+data.romaji+')' : '');
+    set('rTranslation', data.translation_bg || '');
+    set('rExJp', data.example_jp || '');
+    set('rExReading', data.example_reading || '');
+    set('rExBg', data.example_bg || '');
+    const resultEl = document.getElementById('result');
+    if(resultEl) resultEl.classList.add('show');
+  }
+
+  function parseJsonLoose(text){
+    let t = text.trim();
+    t = t.replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+    return JSON.parse(t);
+  }
+
+  async function callClaude(messages){
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        messages: messages
+      })
+    });
+    if(!response.ok){
+      throw new Error('API грешка ('+response.status+')');
+    }
+    const data = await response.json();
+    const textBlock = data.content.find(b=>b.type==='text');
+    if(!textBlock) throw new Error('Няма отговор от модела.');
+    return parseJsonLoose(textBlock.text);
+  }
+
+  const SCHEMA_NOTE = `Отговори САМО с JSON обект (без markdown, без обяснение) с точно следните полета:
+{
+  "headword": "разпознатата дума/канджи на японски",
+  "reading": "четене на хирагана",
+  "romaji": "четене на ромаджи",
+  "translation_bg": "превод на български",
+  "example_jp": "кратко примерно изречение на японски, съдържащо думата",
+  "example_reading": "четене на примерното изречение на хирагана",
+  "example_bg": "превод на примерното изречение на български"
+}`;
+
+  const CANDIDATES_SCHEMA_NOTE = `Отговори САМО с JSON обект (без markdown, без обяснение) с точно следното поле:
+{
+  "words": [
+    { "text": "дума на японски (канджи/кана както се вижда в снимката)", "reading": "четене на хирагана" }
+  ]
+}
+Включи до 8 отделни думи/фрази, подредени по видимост и важност в снимката (най-ясната/централната първо). Ако снимката не съдържа четим японски текст, върни празен масив "words": [].`;
+
+  // ---- 1. tab switching ----
+  function initTabs(){
+    const switchBtns = document.querySelectorAll('.switch button');
+    switchBtns.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        switchBtns.forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+        const target = document.getElementById('panel-'+btn.dataset.panel);
+        if(target) target.classList.add('active');
+        const resultEl = document.getElementById('result');
+        if(resultEl) resultEl.classList.remove('show');
+      });
+    });
+  }
+
+  // ---- 2. handwriting canvas + JP -> BG ----
+  function initCanvas(){
+    canvas = document.getElementById('canvas');
+    gridBox = document.getElementById('gridBox');
+    if(!canvas || !gridBox) return;
+    ctx = canvas.getContext('2d');
+    if(!ctx){
+      const recognizeBtn = document.getElementById('recognizeBtn');
+      if(recognizeBtn) recognizeBtn.disabled = true;
+      const statusEl = document.getElementById('status1');
+      if(statusEl) statusEl.textContent = 'Рисуването не се поддържа в този браузър.';
+      return;
+    }
+
+    function resizeCanvas(){
+      const rect = gridBox.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const prevData = hasInk ? canvas.toDataURL() : null;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 7;
+      ctx.strokeStyle = '#221f1b';
+      if(prevData){
+        const img = new Image();
+        img.onload = ()=> ctx.drawImage(img,0,0,rect.width,rect.height);
+        img.src = prevData;
+      }
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function getPos(e){
+      const rect = canvas.getBoundingClientRect();
+      const p = e.touches ? e.touches[0] : e;
+      return { x: p.clientX - rect.left, y: p.clientY - rect.top };
+    }
+    function start(e){
+      e.preventDefault();
+      drawing = true; hasInk = true;
+      const {x,y} = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(x,y);
+    }
+    function move(e){
+      if(!drawing) return;
+      e.preventDefault();
+      const {x,y} = getPos(e);
+      ctx.lineTo(x,y);
+      ctx.stroke();
+    }
+    function end(){ drawing = false; }
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+    canvas.addEventListener('touchstart', start, {passive:false});
+    canvas.addEventListener('touchmove', move, {passive:false});
+    canvas.addEventListener('touchend', end);
+
+    const clearBtn = document.getElementById('clearBtn');
+    if(clearBtn) clearBtn.addEventListener('click', ()=>{
+      const rect = gridBox.getBoundingClientRect();
+      ctx.clearRect(0,0,rect.width,rect.height);
+      hasInk = false;
+      const resultEl = document.getElementById('result');
+      if(resultEl) resultEl.classList.remove('show');
+      const statusEl = document.getElementById('status1');
+      if(statusEl) statusEl.textContent = '';
+    });
+
+    const recognizeBtn = document.getElementById('recognizeBtn');
+    if(recognizeBtn) recognizeBtn.addEventListener('click', async ()=>{
+      const statusEl = document.getElementById('status1');
+      if(!hasInk){
+        if(statusEl){ statusEl.textContent = 'Моля, напишете нещо в полето.'; statusEl.classList.add('err'); }
+        return;
+      }
+      if(statusEl){ statusEl.classList.remove('err'); statusEl.textContent = 'Разпознаване…'; }
+      recognizeBtn.disabled = true;
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        const base64 = dataUrl.split(',')[1];
+        const result = await callClaude([{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: "image/png", data: base64 } },
+            { type: "text", text: "Това е ръкописно написана японска дума (канджи/кана) от езиков ученик. Разпознай я и попълни следния речников запис.\n\n" + SCHEMA_NOTE }
+          ]
+        }]);
+        showResult(result);
+        if(statusEl) statusEl.textContent = '';
+      } catch(err){
+        if(statusEl){ statusEl.textContent = 'Възникна грешка: ' + err.message; statusEl.classList.add('err'); }
+      } finally {
+        recognizeBtn.disabled = false;
+      }
+    });
+  }
+
+  // ---- 3. photo upload -> BG ----
+  function initPhoto(){
+    const photoInput = document.getElementById('photoInput');
+    const photoZone = document.getElementById('photoZone');
+    const photoPreview = document.getElementById('photoPreview');
+    const recognizePhotoBtn = document.getElementById('recognizePhotoBtn');
+    const photoCandidates = document.getElementById('photoCandidates');
+    const chooseBtn = document.getElementById('chooseBtn');
+    if(!photoInput || !photoZone || !photoPreview || !recognizePhotoBtn || !photoCandidates || !chooseBtn) return;
+
+    let photoBase64 = null, photoMediaType = null;
+
+    chooseBtn.addEventListener('click', (e)=>{ e.stopPropagation(); photoInput.click(); });
+    photoZone.addEventListener('click', ()=> photoInput.click());
+
+    // Downscale large photos client-side: keeps recognition fast and reliable.
+    function prepareImage(dataUrl){
+      return new Promise((resolve, reject)=>{
+        const img = new Image();
+        img.onload = ()=>{
+          const MAX_DIM = 1600;
+          let width = img.naturalWidth || img.width;
+          let height = img.naturalHeight || img.height;
+          if(width > MAX_DIM || height > MAX_DIM){
+            const scale = MAX_DIM / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const c = document.createElement('canvas');
+          c.width = width; c.height = height;
+          const cctx = c.getContext('2d');
+          if(!cctx){ reject(new Error('canvas unavailable')); return; }
+          cctx.fillStyle = '#fff';
+          cctx.fillRect(0,0,width,height);
+          cctx.drawImage(img, 0, 0, width, height);
+          resolve({ dataUrl: c.toDataURL('image/jpeg', 0.9), mediaType: 'image/jpeg' });
+        };
+        img.onerror = ()=> reject(new Error('image load failed'));
+        img.src = dataUrl;
+      });
+    }
+
+    photoInput.addEventListener('change', ()=>{
+      const file = photoInput.files && photoInput.files[0];
+      const statusEl = document.getElementById('status3');
+      if(statusEl){ statusEl.textContent = ''; statusEl.classList.remove('err'); }
+      photoCandidates.innerHTML = '';
+      if(!file) return;
+      if(!file.type.startsWith('image/')){
+        if(statusEl){ statusEl.textContent = 'Моля, изберете файл със снимка.'; statusEl.classList.add('err'); }
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = async ()=>{
+        try {
+          const { dataUrl, mediaType } = await prepareImage(reader.result);
+          photoMediaType = mediaType;
+          photoBase64 = dataUrl.split(',')[1];
+          photoPreview.src = dataUrl;
+          photoZone.classList.add('has-image');
+          recognizePhotoBtn.disabled = false;
+          const resultEl = document.getElementById('result');
+          if(resultEl) resultEl.classList.remove('show');
+        } catch(e){
+          if(statusEl){ statusEl.textContent = 'Снимката не може да бъде заредена.'; statusEl.classList.add('err'); }
+        }
+      };
+      reader.onerror = ()=>{
+        if(statusEl){ statusEl.textContent = 'Снимката не може да бъде прочетена.'; statusEl.classList.add('err'); }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    async function extractCandidates(){
+      const statusEl = document.getElementById('status3');
+      if(statusEl){ statusEl.classList.remove('err'); statusEl.textContent = 'Анализиране на снимката…'; }
+      recognizePhotoBtn.disabled = true;
+      photoCandidates.innerHTML = '';
+      const resultEl = document.getElementById('result');
+      if(resultEl) resultEl.classList.remove('show');
+
+      try {
+        const parsed = await callClaude([{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: photoMediaType, data: photoBase64 } },
+            { type: "text", text: "Тази снимка би трябвало да съдържа японски текст (печатен или ръкописен — книга, табела, меню, бележка и др.). Прегледай внимателно снимката и извлечи отделните японски думи/фрази, които разпознаваш ясно.\n\n" + CANDIDATES_SCHEMA_NOTE }
+          ]
+        }]);
+
+        const words = (parsed && Array.isArray(parsed.words)) ? parsed.words.filter(w=>w && w.text) : [];
+        if(words.length === 0){
+          if(statusEl){ statusEl.textContent = 'Не открихме четим японски текст в тази снимка. Опитайте по-ясна снимка, по-отблизо и на добра светлина.'; statusEl.classList.add('err'); }
+          return;
+        }
+        if(statusEl) statusEl.textContent = 'Изберете дума, за да видите превода:';
+        words.forEach(w=>{
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'chip';
+          chip.innerHTML = '<span class="cjp"></span><span class="creading"></span>';
+          chip.querySelector('.cjp').textContent = w.text;
+          chip.querySelector('.creading').textContent = w.reading || '';
+          chip.addEventListener('click', ()=> lookupSelectedWord(w.text, chip));
+          photoCandidates.appendChild(chip);
+        });
+      } catch(err){
+        if(statusEl){ statusEl.textContent = 'Възникна грешка: ' + err.message; statusEl.classList.add('err'); }
+      } finally {
+        recognizePhotoBtn.disabled = false;
+      }
+    }
+
+    async function lookupSelectedWord(text, chipEl){
+      const statusEl = document.getElementById('status3');
+      photoCandidates.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
+      if(chipEl) chipEl.classList.add('selected');
+      if(statusEl){ statusEl.classList.remove('err'); statusEl.textContent = 'Превеждане на „' + text + '“…'; }
+      try {
+        const result = await callClaude([{
+          role: "user",
+          content: [
+            { type: "text", text: "Дай пълен речников запис за следната японска дума/фраза, разпозната от снимка: \"" + text + "\"\n\n" + SCHEMA_NOTE }
+          ]
+        }]);
+        showResult(result);
+        if(statusEl) statusEl.textContent = '';
+      } catch(err){
+        if(statusEl){ statusEl.textContent = 'Възникна грешка: ' + err.message; statusEl.classList.add('err'); }
+      }
+    }
+
+    recognizePhotoBtn.addEventListener('click', ()=>{
+      const statusEl = document.getElementById('status3');
+      if(!photoBase64){
+        if(statusEl){ statusEl.textContent = 'Моля, изберете снимка.'; statusEl.classList.add('err'); }
+        return;
+      }
+      extractCandidates();
+    });
+  }
+
+  // ---- 4. BG text -> JP ----
+  function initBgTranslate(){
+    const translateBgBtn = document.getElementById('translateBgBtn');
+    const bgInput = document.getElementById('bgInput');
+    if(!translateBgBtn || !bgInput) return;
+
+    translateBgBtn.addEventListener('click', async ()=>{
+      const statusEl = document.getElementById('status2');
+      const input = bgInput.value.trim();
+      if(!input){
+        if(statusEl){ statusEl.textContent = 'Моля, въведете дума или фраза.'; statusEl.classList.add('err'); }
+        return;
+      }
+      if(statusEl){ statusEl.classList.remove('err'); statusEl.textContent = 'Превеждане…'; }
+      translateBgBtn.disabled = true;
+      try {
+        const result = await callClaude([{
+          role: "user",
+          content: [
+            { type: "text", text: "Преведи следната българска дума/фраза на японски и попълни речников запис. Българският текст е: \"" + input + "\"\n\n" + SCHEMA_NOTE.replace('"translation_bg": "превод на български"', '"translation_bg": "' + input + '"') }
+          ]
+        }]);
+        showResult(result);
+        if(statusEl) statusEl.textContent = '';
+      } catch(err){
+        if(statusEl){ statusEl.textContent = 'Възникна грешка: ' + err.message; statusEl.classList.add('err'); }
+      } finally {
+        translateBgBtn.disabled = false;
+      }
+    });
+  }
+
+  // Each feature initializes independently — a failure in one can't take
+  // down the others.
+  [initTabs, initCanvas, initPhoto, initBgTranslate].forEach(fn=>{
+    try { fn(); } catch(e){ console.error('init failed:', fn.name, e); }
+  });
+})();
+</script>
+</body>
+</html>
